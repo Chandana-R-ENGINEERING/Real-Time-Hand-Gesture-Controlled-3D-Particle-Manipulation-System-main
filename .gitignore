@@ -1,0 +1,23 @@
+node_modules/
+test-results/
+playwright-report/
+screenshots/
+.omni/
+.tmp/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
+.env
+
+# SSL certificates and private keys
+cert.pem
+key.pem
+*.pem
+
+# Test recordings and large videos
+*.mp4
+
+# Unpacked archive datasets
+archive*/
+archive (10)/

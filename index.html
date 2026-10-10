@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vector — 3D Particle Manipulation</title>
+  <meta name="description" content="Vector: Real-Time Hand Gesture-Controlled 3D Particle Manipulation System.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='22' fill='none' stroke='%2366e0ff' stroke-width='4'/%3E%3Ccircle cx='32' cy='32' r='8' fill='%23ffd166'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <canvas id="gl" aria-label="Particle scene"></canvas>
+  <canvas id="overlay" aria-hidden="true"></canvas>
+  <video id="cam" playsinline muted></video>
+
+  <header class="brand">
+    <div class="logo" aria-hidden="true"><span></span></div>
+    <div>
+      <div class="brand-name">Vector</div>
+      <div class="brand-sub">snap • form • explode — with your hand</div>
+    </div>
+  </header>
+
+  <aside id="panel" class="panel glass">
+    <section class="now">
+      <div class="cat" id="cat">Wonders</div>
+      <h1 id="name">Turtle Tower</h1>
+      <p id="fact" class="fact"></p>
+    </section>
+
+    <section class="status">
+      <div class="row">
+        <span class="k">Scene</span><span id="statePill" class="pill" data-state="idle">idle</span>
+      </div>
+      <div class="row">
+        <span class="k">Hand</span><span id="posePill" class="pill pose">no hand</span>
+      </div>
+      <div class="row">
+        <span class="k">Camera</span><button id="camStatusPill" class="pill-btn off" title="Click to toggle camera">🔴 Off (Click to start)</button>
+      </div>
+      <div class="sensitivity">
+        <div class="sensitivity-head">
+          <label class="k" for="gestureSensitivity">Gesture sensitivity</label>
+          <select id="gestureSensitivity" aria-describedby="gestureSensitivityHint">
+            <option value="standard" selected>Standard</option>
+            <option value="forgiving">More forgiving</option>
+          </select>
+        </div>
+        <div id="gestureSensitivityHint" class="hint">More forgiving helps recognize less distinct hand poses.</div>
+      </div>
+      <div class="sensitivity">
+        <div class="sensitivity-head">
+          <label class="k" for="perfMode">Laptop Performance</label>
+          <select id="perfMode" aria-describedby="perfModeHint">
+            <option value="20000">🛡️ Laptop Lite (20k)</option>
+            <option value="35000" selected>⚡ Smooth (35k)</option>
+            <option value="55000">⚖️ Balanced (55k)</option>
+            <option value="100000">🚀 Ultra (100k)</option>
+          </select>
+        </div>
+        <div id="perfModeHint" class="hint">Adjust particle density to guarantee smooth 60 FPS without laptop heat, lag, or crashes.</div>
+      </div>
+      <div class="meter">
+        <div class="meter-head"><span class="k">Hand openness</span><b id="openPct">0%</b></div>
+        <div class="bar"><i id="openBar"></i></div>
+      </div>
+      <div id="explodeBox" class="meter explode" hidden>
+        <div class="meter-head"><span class="k">Exploded view</span><b id="explodePct">0%</b></div>
+        <input id="explodeSlider" type="range" min="0" max="100" value="0" aria-label="Exploded view amount">
+        <div class="hint">Open your hand to pull it apart · close it to assemble</div>
+      </div>
+    </section>
+
+    <section>
+      <div class="k">Gestures</div>
+      <ul id="guide" class="guide"></ul>
+    </section>
+
+    <section class="buttons">
+      <button id="bSnap" title="Space">🫰 Snap</button>
+      <button id="bForm" title="F">✊ Form</button>
+      <button id="bOpen" title="O">✋ Release</button>
+      <button id="bNext" title="V / →">✌ Next</button>
+    </section>
+  </aside>
+
+  <div id="bigTitle" class="big-title"><div class="t"></div><div class="s"></div></div>
+
+  <nav id="catalog" class="catalog glass" aria-label="Models">
+    <div id="catTabs" class="tabs" role="tablist"></div>
+    <div id="catChips" class="chips"></div>
+  </nav>
+
+  <section id="partCard" class="part-card glass" hidden aria-live="polite">
+    <div class="phead">
+      <i class="swatch"></i>
+      <div style="flex:1">
+        <div class="pname"></div>
+        <div class="psystem-badge" id="psystemBadge"></div>
+      </div>
+      <button id="partClose" class="x" title="Close (Esc)">✕</button>
+    </div>
+    <div class="psubtitle" id="psubtitle"></div>
+    <div class="pinfo"></div>
+    <div class="pdetailed" id="pdetailed"></div>
+    <div class="pmetrics-grid" id="pmetricsGrid"></div>
+    <div class="pconnections" id="pconnections"></div>
+    <div class="pactions">
+      <button id="partZoom">🔍 Zoom In</button>
+      <button id="partPull">🤏 Pull out</button>
+      <button id="partSpeak">🔊 Read aloud</button>
+    </div>
+    <div class="phint">Click or point ☝ at another part · pinch 🤏 to pull out</div>
+  </section>
+
+  <section id="quiz" class="quiz glass" hidden aria-live="polite">
+    <div class="q"></div><div class="qs"></div><div class="qf"></div>
+    <button id="quizStop" class="x" title="Stop quiz (Q)">✕</button>
+  </section>
+
+  <div class="top-right">
+    <div id="stats" class="stats glass"></div>
+    <div class="icons">
+      <button id="bCam" class="icon" title="Camera on/off (C)">📷</button>
+      <button id="bSound" class="icon on" title="Audio feedback (S)">🔊</button>
+      <button id="bDataset" class="icon" title="Hand Tracking & Datasets (J)">📊</button>
+      <button id="bLabels" class="icon on" title="Part labels (L)">🏷️</button>
+      <button id="bRotate" class="icon on" title="Auto-rotate (R)">⟳</button>
+      <button id="bHandRot" class="icon on" title="Hand rotation: twist your hand to turn the model (G)">🔄</button>
+      <button id="bCut" class="icon" title="Cut-away cross-section (X)">✂</button>
+      <button id="bQuiz" class="icon" title="Quiz: find the part (Q)">🎓</button>
+      <button id="bVoice" class="icon" title="Voice commands + read aloud (M)">🎤</button>
+      <button id="bRec" class="icon" title="Record a video (K)">⏺</button>
+      <button id="bDemo" class="icon" title="Play demo (D)">▶</button>
+      <button id="bHelp" class="icon" title="Keyboard help (H)">?</button>
+    </div>
+  </div>
+
+  <div id="datasetModal" class="dataset-modal glass" hidden>
+    <div class="dhead">
+      <h3>Hand Tracking &amp; 3D Datasets</h3>
+      <button id="bCloseDataset" class="x" title="Close (Esc)">✕</button>
+    </div>
+    <div class="dsection">
+      <div class="dtitle">🤖 Neural Detection Models</div>
+      <div class="drow"><span>MediaPipe Hand Landmarker:</span><b class="dstatus good">Loaded (21 3D points)</b></div>
+      <div class="drow"><span>Gesture Recognizer Task:</span><b class="dstatus good">Ready (8.37 MB)</b></div>
+      <div class="drow"><span>Current Detected Pose:</span><b id="livePoseText" class="dstatus accent">—</b></div>
+      <div class="drow"><span>Hand Openness:</span><b id="liveOpennessText" class="dstatus accent">0%</b></div>
+    </div>
+    <div class="dsection">
+      <div class="dtitle">📦 Available Datasets</div>
+      <div class="dbuttons">
+        <a href="/datasets/hand_gestures_dataset.json" download="hand_gestures_dataset.json" class="dbtn">📥 Hand Gestures (JSON)</a>
+        <a href="/datasets/hand_gestures_dataset.csv" download="hand_gestures_dataset.csv" class="dbtn">📥 Hand Gestures (CSV)</a>
+        <a href="/datasets/human_body_particles.json" download="human_body_particles.json" class="dbtn">📥 Human Body Cloud (JSON)</a>
+        <a href="/datasets/human_heart_cardiac.json" download="human_heart_cardiac.json" class="dbtn">📥 Heart Cardiac Cloud (JSON)</a>
+      </div>
+    </div>
+    <div class="dsection">
+      <div class="dtitle">🔴 Live Hand Data Capture</div>
+      <p class="dhint">Capture current hand landmarks (21 points) from camera to create your own custom gesture dataset:</p>
+      <div class="drow"><button id="bCaptureSample" class="dbtn highlight">📸 Capture Current Pose</button><span id="captureCount">0 samples captured</span></div>
+      <button id="bDownloadCustomDataset" class="dbtn" style="margin-top:6px;width:100%" disabled>💾 Export Custom Dataset (JSON)</button>
+    </div>
+  </div>
+
+  <div id="help" class="help glass" hidden>
+    <h2>Controls</h2>
+    <table>
+      <tr><td><kbd>Space</kbd></td><td>Snap — summon / dissolve</td></tr>
+      <tr><td><kbd>F</kbd> / <kbd>O</kbd></td><td>Fist (form) / Open hand (release)</td></tr>
+      <tr><td><kbd>V</kbd> <kbd>→</kbd> <kbd>←</kbd></td><td>Next / previous model</td></tr>
+      <tr><td><kbd>E</kbd> <kbd>↑</kbd> <kbd>↓</kbd> wheel</td><td>Exploded view (organs, engines)</td></tr>
+      <tr><td>twist hand</td><td>Rotate the model (raise / lower = tilt) · <kbd>G</kbd> on/off</td></tr>
+      <tr><td>☝ point · 🤏 pinch</td><td>Pick a part (or click it) · pull it out</td></tr>
+      <tr><td>🙌 two hands</td><td>Zoom (also <kbd>+</kbd> <kbd>-</kbd> <kbd>0</kbd>, ctrl + wheel)</td></tr>
+      <tr><td><kbd>X</kbd> <kbd>,</kbd> <kbd>.</kbd></td><td>Cut-away slice (move hand / mouse)</td></tr>
+      <tr><td><kbd>Q</kbd> <kbd>M</kbd> <kbd>K</kbd> <kbd>I</kbd></td><td>Quiz · voice · record video · describe part</td></tr>
+      <tr><td><kbd>S</kbd> <kbd>J</kbd></td><td>Sound toggle · Hand Datasets inspector</td></tr>
+      <tr><td>drag</td><td>Rotate the model</td></tr>
+      <tr><td><kbd>R</kbd> <kbd>L</kbd> <kbd>T</kbd></td><td>Auto-rotate · labels · trails</td></tr>
+      <tr><td><kbd>C</kbd> <kbd>D</kbd> <kbd>H</kbd></td><td>Camera · demo · this help</td></tr>
+    </table>
+  </div>
+
+  <div id="camBanner" class="cam-banner glass" hidden>
+    <div class="cam-banner-content">
+      <span class="cam-banner-icon" id="camBannerIcon">📷</span>
+      <div class="cam-banner-text">
+        <b id="camBannerTitle">Camera Permission Needed</b>
+        <span id="camBannerDesc">Click below to allow camera access for real-time hand gesture tracking.</span>
+      </div>
+      <div class="cam-banner-actions">
+        <button id="bCamBannerAction" class="cam-banner-btn">📷 Allow Camera</button>
+        <button id="bCamBannerDismiss" class="x" title="Dismiss">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="camPip" class="cam-pip glass">
+    <div class="cam-pip-header">
+      <span class="cam-pip-title">📷 Hand Tracking Viewfinder</span>
+      <div class="cam-pip-controls">
+        <button id="bCamPipToggle" class="cam-pip-icon-btn" title="Minimize / Expand Viewfinder">▾</button>
+      </div>
+    </div>
+    <div class="cam-pip-body" id="camPipBody">
+      <div class="cam-pip-video-wrap">
+        <canvas id="camPipCanvas" width="240" height="150"></canvas>
+        <div id="camPipOverlay" class="cam-pip-overlay">
+          <div id="camPipBadge" class="cam-pip-badge off">Camera Off</div>
+          <button id="bCamPipStart" class="cam-pip-start-btn">▶ Enable Camera</button>
+        </div>
+      </div>
+      <div class="cam-pip-hint" id="camPipHint">Wave or show your hand to manipulate 3D particles</div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <div id="start" class="start">
+    <div class="start-card glass">
+      <div class="logo big" aria-hidden="true"><span></span></div>
+      <h1>Vector</h1>
+      <p>Real-Time Hand Gesture-Controlled 3D Particle Manipulation System: glowing anatomical models (brain, beating heart, lungs, skeleton, organs), scientific wonders, DNA, and engines made of over 100,000 GPU particles — manipulated in real time with your hand via camera tracking.</p>
+      <ol class="steps">
+        <li><b>Snap</b> your fingers to summon particles.</li>
+        <li>Make a <b>fist</b> to assemble the wonder, organ or machine.</li>
+        <li><b>Open</b> your hand: wonders morph to the next one — organs, engines and voxels <b>explode</b> to show every part inside, named with what it does. Close your hand to put it back together.</li>
+        <li><b>Twist</b> your hand to turn the model, raise or lower it to tilt; <b>two hands</b> zoom.</li>
+        <li><b>Point</b> ☝ at a part to learn what it does, <b>pinch</b> 🤏 to pull it out. Try the 🎓 quiz, 🎤 voice, ✂ cut-away and ⏺ recording.</li>
+        <li>Show <b>✌</b> to jump to the next model.</li>
+      </ol>
+      <div class="start-buttons">
+        <button id="bStartCam" class="primary">Start with camera</button>
+        <button id="bStartNoCam">Continue without camera</button>
+      </div>
+      <p class="cam-permission-hint">ℹ️ If your browser doesn't prompt for camera access, click the lock / camera icon 🔒 next to <b>localhost:5173</b> in your address bar and set Camera to <b>Allow</b>.</p>
+      <p id="startMsg" class="start-msg"></p>
+    </div>
+  </div>
+
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>

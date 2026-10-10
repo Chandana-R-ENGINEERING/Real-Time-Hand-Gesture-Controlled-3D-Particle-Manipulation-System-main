@@ -1,0 +1,28 @@
+{
+  "name": "vector-3d-particle-manipulation",
+  "version": "1.0.0",
+  "description": "Vector: Real-Time Hand Gesture-Controlled 3D Particle Manipulation System (MediaPipe Hand Tracking + WebGL2 Particles)",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.mjs 5173",
+    "start:https": "node server.mjs 5173 --https",
+    "https": "node server.mjs 5173 --https",
+    "dev": "node server.mjs 5173",
+    "download-datasets": "node scripts/download_datasets.mjs",
+    "generate-hand-dataset": "node scripts/generate_hand_dataset.mjs",
+    "train-classifier": "python scripts/train_hand_gesture_classifier.py",
+    "test": "playwright test",
+    "test:report": "playwright show-report"
+  },
+  "keywords": ["mediapipe", "webgl2", "particles", "hand-tracking", "gestures"],
+  "license": "MIT",
+  "dependencies": {
+    "@mediapipe/tasks-vision": "^1.0.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "version": "1.0.0",
+  "description": "Vector Real-Time Gesture 3D Particle Manipulation Datasets",
+  "updated": "2026-10-08T07:43:52.105Z",
+  "datasets": [
+    {
+      "file": "human_body_particles.json",
+      "name": "Human Body",
+      "category": "Anatomy",
+      "description": "11 organ systems · 37 trillion cells (Full multi-part point cloud)",
+      "totalPoints": 60000
+    },
+    {
+      "file": "human_heart_cardiac.json",
+      "name": "Human Heart",
+      "category": "Anatomy",
+      "description": "Beating 4-chamber cardiac anatomy with systemic and pulmonary trunks",
+      "totalPoints": 25000
+    },
+    {
+      "file": "dna_helix.json",
+      "name": "DNA Double Helix",
+      "category": "Biology",
+      "description": "B-DNA double helix unzipping into base pairs (Adenine, Thymine, Guanine, Cytosine)",
+      "totalPoints": 20000
+    }
+  ],
+  "models": [
+    {
+      "name": "MediaPipe Hand Landmarker",
+      "file": "models/hand_landmarker.task",
+      "size": "7.82 MB",
+      "description": "Google MediaPipe on-device 21-landmark 3D hand tracking neural network"
+    }
+  ]
+}
